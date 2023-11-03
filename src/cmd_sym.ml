@@ -1,4 +1,5 @@
 open Syntax
+module Expr = Encoding.Expression
 module Value = Symbolic_value.S
 module Choice = Symbolic.P.Choice
 module Solver = Thread.Solver
@@ -17,85 +18,98 @@ let print_extern_module : Symbolic.P.extern_func Link.extern_module =
   in
   { functions }
 
+(* Hardcoded example -- use info in the future, no need to know explicit layout
+   of struct*)
+(* TODO: Makes db generic *)
+(* { id |-> { info |-> v } } *)
+type tbl =
+  { price : Value.int32
+  ; buyer : Value.int32
+  ; owner : Value.int32
+  }
 
-  let db_extern_module : Symbolic.P.extern_func Link.extern_module =
-    let set_price (i : Value.int32) (j : Value.int32) (k : Value.int32) : unit Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string k);
+let db_extern_module : Symbolic.P.extern_func Link.extern_module =
+  let db = Hashtbl.create 256 in
 
+  let fresh_tbl id =
+    { price = Expr.mk_symbol_s `I32Type (Format.asprintf "price_%a" Expr.pp id)
+    ; buyer = Expr.mk_symbol_s `I32Type (Format.asprintf "buyer_%a" Expr.pp id)
+    ; owner = Expr.mk_symbol_s `I32Type (Format.asprintf "owner_%a" Expr.pp id)
+    }
+  in
+
+  let set_price (id : Value.int32) (_info : Value.int32) (v : Value.int32) :
+    unit Choice.t =
+    let tbl = Hashtbl.find_opt db id in
+    match tbl with
+    | None -> Format.kasprintf failwith "Id (%a) is not present" Expr.pp id
+    | Some tbl ->
+      let new_tbl = { tbl with price = v } in
+      Hashtbl.replace db id new_tbl;
       Choice.return ()
-    in
+  in
 
-    let set_buyer (i : Value.int32) (j : Value.int32) (k : Value.int32) : unit Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string k);
+  let set_buyer (id : Value.int32) (_info : Value.int32) (v : Value.int32) :
+    unit Choice.t =
+    let tbl = Hashtbl.find_opt db id in
+    match tbl with
+    | None -> Format.kasprintf failwith "Id (%a) is not present" Expr.pp id
+    | Some tbl ->
+      let new_tbl = { tbl with buyer = v } in
+      Hashtbl.replace db id new_tbl;
       Choice.return ()
-    in
+  in
 
-    let set (i : Value.int32) : unit Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Choice.return ()
-    in
+  let get_buyer (id : Value.int32) (_info : Value.int32) : Value.int32 Choice.t
+      =
+    let tbl = Hashtbl.find_opt db id in
+    match tbl with
+    | None ->
+      let new_tbl = fresh_tbl id in
+      Hashtbl.replace db id new_tbl;
+      Choice.return new_tbl.buyer
+    | Some tbl -> Choice.return tbl.buyer
+  in
 
-    let get_buyer (i : Value.int32) (j : Value.int32) : Value.int32 Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
-      Choice.return (Value.const_i32 0l)
-    in
+  let get_price (id : Value.int32) (_info : Value.int32) : Value.int32 Choice.t =
+    let tbl = Hashtbl.find_opt db id in
+    match tbl with
+    | None ->
+      let new_tbl = fresh_tbl id in
+      Hashtbl.replace db id new_tbl;
+      Choice.return new_tbl.price
+    | Some tbl -> Choice.return tbl.price
+  in
 
-    let get_price (i : Value.int32) (j : Value.int32) : Value.int32 Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
-      Choice.return (Value.const_i32 0l)
-    in
-
-    let get_owner (i : Value.int32) (j : Value.int32)  : Value.int32 Choice.t =
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
-      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
-      Choice.return (Value.const_i32 0l)
-      
-    in
-
-    let get () : Value.int32 Choice.t =
-      Choice.return (Value.const_i32 0l)
-    in
-
-    (* we need to describe their types *)
-    let functions =
-      [ ( "set"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Res), R0), set)
-        );
-
-        ( "set_buyer"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_buyer)
-        );
-
-        ( "set_price"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_price)
-        );
-
-        ( "get_owner"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_owner)
-        );
-
-        ("get_price"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_price)
-
-        );
-
-        ("get_buyer"
-        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_buyer)
-        );
-
-        ("get"
-        , Symbolic.P.Extern_func.Extern_func (Func (UArg Res, R1 I32), get)
-
-        )
-      ]
-    in
-    { functions }
+  let get_owner (id : Value.int32) (_info : Value.int32) : Value.int32 Choice.t =
+    let tbl = Hashtbl.find_opt db id in
+    match tbl with
+    | None ->
+      let new_tbl = fresh_tbl id in
+      Hashtbl.replace db id new_tbl;
+      Choice.return new_tbl.owner
+    | Some tbl -> Choice.return tbl.owner
+  in
+  (* we need to describe their types *)
+  let functions =
+    [ ( "set_buyer"
+      , Symbolic.P.Extern_func.Extern_func
+          (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_buyer) )
+    ; ( "set_price"
+      , Symbolic.P.Extern_func.Extern_func
+          (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_price) )
+    ; ( "get_owner"
+      , Symbolic.P.Extern_func.Extern_func
+          (Func (Arg (I32, Arg (I32, Res)), R1 I32), get_owner) )
+    ; ( "get_price"
+      , Symbolic.P.Extern_func.Extern_func
+          (Func (Arg (I32, Arg (I32, Res)), R1 I32), get_price) )
+    ; ( "get_buyer"
+      , Symbolic.P.Extern_func.Extern_func
+          (Func (Arg (I32, Arg (I32, Res)), R1 I32), get_buyer) )
+    ]
+  in
+  { functions }
 
 let assert_extern_module : Symbolic.P.extern_func Link.extern_module =
   let positive_i32 (i : Value.int32) : unit Choice.t =

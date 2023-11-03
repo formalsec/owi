@@ -32,7 +32,7 @@ module P = struct
 
   type thread = Thread.t
 
-  module Choice = Choice_monad.MT
+  module Choice = Choice_monad.Explicit
   module Extern_func = Def_value.Make_extern_func (Value) (Choice)
 
   let select (c : vbool) ~(if_true : Value.t) ~(if_false : Value.t) :
