@@ -17,6 +17,86 @@ let print_extern_module : Symbolic.P.extern_func Link.extern_module =
   in
   { functions }
 
+
+  let db_extern_module : Symbolic.P.extern_func Link.extern_module =
+    let set_price (i : Value.int32) (j : Value.int32) (k : Value.int32) : unit Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string k);
+
+      Choice.return ()
+    in
+
+    let set_buyer (i : Value.int32) (j : Value.int32) (k : Value.int32) : unit Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string k);
+      Choice.return ()
+    in
+
+    let set (i : Value.int32) : unit Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Choice.return ()
+    in
+
+    let get_buyer (i : Value.int32) (j : Value.int32) : Value.int32 Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
+      Choice.return (Value.const_i32 0l)
+    in
+
+    let get_price (i : Value.int32) (j : Value.int32) : Value.int32 Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
+      Choice.return (Value.const_i32 0l)
+    in
+
+    let get_owner (i : Value.int32) (j : Value.int32)  : Value.int32 Choice.t =
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string i);
+      Printf.printf "%s\n%!" (Encoding.Expression.to_string j);
+      Choice.return (Value.const_i32 0l)
+      
+    in
+
+    let get () : Value.int32 Choice.t =
+      Choice.return (Value.const_i32 0l)
+    in
+
+    (* we need to describe their types *)
+    let functions =
+      [ ( "set"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Res), R0), set)
+        );
+
+        ( "set_buyer"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_buyer)
+        );
+
+        ( "set_price"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32, Arg (I32, Arg (I32, Res))), R0), set_price)
+        );
+
+        ( "get_owner"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_owner)
+        );
+
+        ("get_price"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_price)
+
+        );
+
+        ("get_buyer"
+        , Symbolic.P.Extern_func.Extern_func (Func (Arg (I32,Arg (I32, Res)), R1 I32), get_buyer)
+        );
+
+        ("get"
+        , Symbolic.P.Extern_func.Extern_func (Func (UArg Res, R1 I32), get)
+
+        )
+      ]
+    in
+    { functions }
+
 let assert_extern_module : Symbolic.P.extern_func Link.extern_module =
   let positive_i32 (i : Value.int32) : unit Choice.t =
     let c = Value.I32.ge i Value.I32.zero in
@@ -168,6 +248,12 @@ let simplify_then_link_then_run ~unsafe ~optimize (pc : unit Result.t Choice.t)
     Link.extern_module' link_state ~name:"symbolic"
       ~func_typ:Symbolic.P.Extern_func.extern_type symbolic_extern_module
   in
+
+  let link_state =
+    Link.extern_module' link_state ~name:"db"
+      ~func_typ:Symbolic.P.Extern_func.extern_type db_extern_module
+  in
+
   let link_state =
     Link.extern_module' link_state ~name:"summaries"
       ~func_typ:Symbolic.P.Extern_func.extern_type summaries_extern_module

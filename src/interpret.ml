@@ -24,27 +24,27 @@ module Make (P : Interpret_functor_intf.P) :
 
   module Stack = Stack.Make (Value) [@@inlined hint]
 
-  module Int32_infix = struct
-    let ( < ) = I32.lt
+  module Int32_infix = struct    
+    let ( < ) = I32.lt                (*V *)
 
-    let ( <= ) = I32.le
+    let ( <= ) = I32.le               (*V *)
 
-    let ( > ) = I32.gt
+    let ( > ) = I32.gt                  (*V *)
 
-    let ( >= ) = I32.ge
+    let ( >= ) = I32.ge                 (*V *)
 
-    let ( + ) = I32.add
+    let ( + ) = I32.add                 (*V *)
 
-    let ( - ) = I32.sub
+    let ( - ) = I32.sub               (*V *)
 
-    let ( ~- ) x = const_i32 0l - x
+    let ( ~- ) x = const_i32 0l - x     (*V negative intenger*)
 
-    let const = const_i32
+    let const = const_i32             (*V *)
 
-    let consti i = const_i32 (Int32.of_int i)
+    let consti i = const_i32 (Int32.of_int i)   (*V *)
   end
 
-  let pop_choice stack =
+  let pop_choice stack =                        (**x *)
     let b, stack = Stack.pop_bool stack in
     Choice.bind (Choice.select b) (fun b -> Choice.return (b, stack))
 
@@ -67,13 +67,13 @@ module Make (P : Interpret_functor_intf.P) :
   let or__ l =
     match l with [] -> Bool.const true | h :: t -> List.fold_left Bool.or_ h t
 
-  let page_size = 65_536
+  let page_size = 65_536                                 (*V *)   
 
   let p_type_eq (_id1, t1) (_id2, t2) = t1 = t2
 
-  let ( let/ ) = Choice.bind
+  let ( let/ ) = Choice.bind                          (*Choice  *)
 
-  let exec_iunop stack nn op =
+  let exec_iunop stack nn op =                              (* O que nn (S32,S64) popcnt *)
     match nn with
     | S32 ->
       let n, stack = Stack.pop_i32 stack in
@@ -90,8 +90,8 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Stack.push_i64 stack res
 
-  let exec_funop stack nn op =
-    match nn with
+  let exec_funop stack nn op =                            (*V *)        
+    match nn with                                           
     | S32 ->
       let open F32 in
       let f, stack = Stack.pop_f32 stack in
@@ -121,7 +121,7 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Stack.push_f64 stack res
 
-  let exec_ibinop (stack : Stack.t) nn (op : ibinop) : Stack.t Choice.t =
+  let exec_ibinop (stack : Stack.t) nn (op : ibinop) : Stack.t Choice.t = (*Choice  let/=choice.bind*)
     match nn with
     | S32 ->
       let (n1, n2), stack = Stack.pop2_i32 stack in
@@ -205,7 +205,7 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Choice.return @@ Stack.push_i64 stack res
 
-  let exec_fbinop stack nn (op : fbinop) =
+  let exec_fbinop stack nn (op : fbinop) =      (*v *)
     match nn with
     | S32 ->
       let (f1, f2), stack = Stack.pop2_f32 stack in
@@ -232,7 +232,7 @@ module Make (P : Interpret_functor_intf.P) :
          | Max -> max f1 f2
          | Copysign -> copy_sign f1 f2 )
 
-  let exec_itestop stack nn op =
+  let exec_itestop stack nn op =          (*v Qual o objetivo*)
     match nn with
     | S32 ->
       let n, stack = Stack.pop_i32 stack in
@@ -243,7 +243,7 @@ module Make (P : Interpret_functor_intf.P) :
       let res = match op with Eqz -> I64.eq_const n 0L in
       Stack.push_bool stack res
 
-  let exec_irelop stack nn (op : irelop) =
+  let exec_irelop stack nn (op : irelop) =             (*v *)
     match nn with
     | S32 ->
       let (n1, n2), stack = Stack.pop2_i32 stack in
@@ -280,7 +280,7 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Stack.push_bool stack res
 
-  let exec_frelop stack nn (op : frelop) =
+  let exec_frelop stack nn (op : frelop) =                    (*v *)
     match nn with
     | S32 ->
       let (n1, n2), stack = Stack.pop2_f32 stack in
@@ -309,7 +309,7 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Stack.push_bool stack res
 
-  let exec_itruncf stack nn nn' sx =
+  let exec_itruncf stack nn nn' sx =         (*x explain*)
     match (nn, nn') with
     | S32, S32 ->
       let f, stack = Stack.pop_f32 stack in
@@ -336,7 +336,7 @@ module Make (P : Interpret_functor_intf.P) :
       in
       Stack.push_i64 stack res
 
-  let exec_itruncsatf stack nn nn' sx =
+  let exec_itruncsatf stack nn nn' sx =     (*x explain*)
     match nn with
     | S32 -> begin
       match nn' with
@@ -377,7 +377,7 @@ module Make (P : Interpret_functor_intf.P) :
         Stack.push_i64 stack n
     end
 
-  let exec_fconverti stack nn nn' sx =
+  let exec_fconverti stack nn nn' sx =        (*v*)
     match nn with
     | S32 -> (
       let open F32 in
@@ -402,7 +402,7 @@ module Make (P : Interpret_functor_intf.P) :
         let n = if sx = S then convert_i64_s n else convert_i64_u n in
         Stack.push_f64 stack n )
 
-  let exec_ireinterpretf stack nn nn' =
+  let exec_ireinterpretf stack nn nn' =     (*v*)
     match nn with
     | S32 -> begin
       match nn' with
@@ -427,7 +427,7 @@ module Make (P : Interpret_functor_intf.P) :
         Stack.push_i64 stack n
     end
 
-  let exec_freinterpreti stack nn nn' =
+  let exec_freinterpreti stack nn nn' =            (*v*)
     match nn with
     | S32 -> begin
       match nn' with
@@ -452,7 +452,7 @@ module Make (P : Interpret_functor_intf.P) :
         Stack.push_f64 stack n
     end
 
-  let init_local (_id, t) : value =
+  let init_local (_id, t) : value =         (**v *)
     match t with
     | Num_type I32 -> I32 I32.zero
     | Num_type I64 -> I64 I64.zero
@@ -465,7 +465,7 @@ module Make (P : Interpret_functor_intf.P) :
 
   type extern_func = Extern_func.extern_func
 
-  let exec_extern_func stack (f : extern_func) =
+  let exec_extern_func stack (f : extern_func) =                  (*x *)
     let pop_arg (type ty) stack (arg : ty Extern_func.telt) :
       (ty * Stack.t) Choice.t =
       match arg with
@@ -550,9 +550,9 @@ module Make (P : Interpret_functor_intf.P) :
 
       let of_list = Array.of_list
 
-      let get t i = t.(i)
+      let get t i = t.(i)     (**v *)
 
-      let set t i v =
+      let set t i v =         (**v *)
         let locals = Array.copy t in
         locals.(i) <- v;
         locals
@@ -573,14 +573,14 @@ module Make (P : Interpret_functor_intf.P) :
 
     type block_stack = block list
 
-    type count =
+    type count =                          (**v *)
       { name : string option
       ; mutable enter : int
       ; mutable instructions : int
       ; calls : (indice, count) Hashtbl.t
       }
 
-    type exec_state =
+    type exec_state =                       (**v *)
       { return_state : exec_state option
       ; stack : stack
       ; locals : locals
@@ -592,7 +592,7 @@ module Make (P : Interpret_functor_intf.P) :
       ; envs : Env.t Env_id.collection
       }
 
-    let empty_exec_state ~locals ~env ~envs =
+    let empty_exec_state ~locals ~env ~envs =         (**v *)
       { return_state = None
       ; stack = []
       ; locals = Locals.of_list locals
@@ -609,7 +609,7 @@ module Make (P : Interpret_functor_intf.P) :
       ; envs
       }
 
-    let rec print_count ppf count =
+    let rec print_count ppf count =   (**v *)
       let calls ppf tbl =
         let l =
           List.sort (fun (id1, _) (id2, _) -> compare id1 id2)
@@ -633,13 +633,13 @@ module Make (P : Interpret_functor_intf.P) :
       Format.fprintf ppf "@[<v>enter %i@ intrs %i%a@]" count.enter
         count.instructions calls count.calls
 
-    let empty_count name =
+    let empty_count name =                                    (**v *)
       { name; enter = 0; instructions = 0; calls = Hashtbl.create 0 }
 
-    let count_instruction state =
+    let count_instruction state =                               (**v *)
       state.count.instructions <- state.count.instructions + 1
 
-    let enter_function_count count func_name func =
+    let enter_function_count count func_name func =         (**v *)
       let c =
         match Hashtbl.find_opt count.calls func with
         | None ->
@@ -655,7 +655,7 @@ module Make (P : Interpret_functor_intf.P) :
       | Return of value list
       | Continue of exec_state
 
-    let return (state : exec_state) =
+    let return (state : exec_state) =     (**x  SOME *)
       let args = Stack.keep state.stack (List.length state.func_rt) in
       match state.return_state with
       | None -> Return args
@@ -663,7 +663,7 @@ module Make (P : Interpret_functor_intf.P) :
         let stack = args @ state.stack in
         Continue { state with stack }
 
-    let branch (state : exec_state) n =
+    let branch (state : exec_state) n =     (**x loop *)
       let block_stack = Stack.drop_n state.block_stack n in
       match block_stack with
       | [] -> Choice.return (return state)
@@ -676,7 +676,7 @@ module Make (P : Interpret_functor_intf.P) :
         Choice.return
           (Continue { state with block_stack; pc = block.branch; stack })
 
-    let end_block (state : exec_state) =
+    let end_block (state : exec_state) =      (**x  *)
       match state.block_stack with
       | [] -> Choice.return (return state)
       | block :: block_stack ->
@@ -741,7 +741,7 @@ module Make (P : Interpret_functor_intf.P) :
       if return then Choice.return (State.return state)
       else Choice.return (State.Continue state)
 
-  let func_type (state : State.exec_state) (f : Func_intf.t) =
+  let func_type (state : State.exec_state) (f : Func_intf.t) = (**v *)
     match f with
     | WASM (_, func, _) -> func.type_f
     | Extern f ->
@@ -984,7 +984,7 @@ module Make (P : Interpret_functor_intf.P) :
         let/ res = P.select b ~if_true:o1 ~if_false:o2 in
         st @@ Stack.push stack res
       end
-      else begin
+      else begin                                        (*v*)
         let/ b, stack = pop_choice stack in
         let o2, stack = Stack.pop stack in
         let o1, stack = Stack.pop stack in
