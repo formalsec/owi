@@ -470,21 +470,20 @@ module Multicore = struct
   *)
   let check_reachability =
     let* () = yield in
-    let* (S (solver_module, s)) = solver in
-    let module Solver = (val solver_module) in
+    let* solver in
     let* thread in
-    let sat = Solver.check s thread.pc in
+    let sat = Z3.check solver thread.pc in
+
     if sat then return () else stop
 
   let get_model symbol =
     let* () = yield in
-    let* (S (solver_module, s)) = solver in
-    let module Solver = (val solver_module) in
+    let* solver in
     let+ thread in
-    let sat = Solver.check s thread.pc in
+    let sat = Z3.check solver thread.pc in
     if not sat then None
     else begin
-      let model = Solver.model ~symbols:[ symbol ] s in
+      let model = Z3.model ~symbols:[ symbol ] solver in
       match model with
       | None ->
         failwith "Unreachable: The problem is sat so a model should exist"

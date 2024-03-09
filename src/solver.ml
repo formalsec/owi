@@ -1,13 +1,5 @@
-type 'a solver_module = (module Encoding.Solver_intf.S with type t = 'a)
+module Z3 = Encoding.Solver.Batch (Encoding.Z3_mappings2)
 
-type solver = S : ('a solver_module * 'a) -> solver [@@unboxed]
+type solver = Z3.t
 
-module Z3Batch = Encoding.Solver.Batch (Encoding.Z3_mappings)
-
-let solver_mod : Z3Batch.t solver_module = (module Z3Batch)
-
-let fresh_solver () =
-  let module Mapping = Encoding.Z3_mappings.Fresh.Make () in
-  let module Batch = Encoding.Solver.Batch (Mapping) in
-  let solver = Batch.create ~logic:QF_BVFP () in
-  S ((module Batch), solver)
+let fresh_solver () = Z3.create ~logic:QF_BVFP ()

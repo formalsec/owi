@@ -151,8 +151,8 @@ let run_file ~unsafe ~optimize pc filename =
   simplify_then_link_then_run ~unsafe ~optimize pc m0dule
 
 let get_model ~symbols solver pc =
-  assert (Solver.Z3Batch.check solver pc);
-  match Solver.Z3Batch.model ~symbols solver with
+  assert (Solver.Z3.check solver pc);
+  match Solver.Z3.model ~symbols solver with
   | None -> assert false
   | Some model -> model
 
@@ -198,7 +198,7 @@ let cmd profiling debug unsafe optimize workers no_stop_at_failure no_values
     | Error (`Msg msg) -> Error (`Msg msg)
   in
   let pc = Choice.return (Ok ()) in
-  let solver = Solver.Z3Batch.create () in
+  let solver = Solver.Z3.create ~logic:QF_BVFP () in
   let result = List.fold_left (run_file ~unsafe ~optimize) pc files in
   let thread : Thread.t = Thread.create () in
   let results = Choice.run ~workers result thread in
