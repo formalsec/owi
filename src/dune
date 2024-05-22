@@ -3,6 +3,7 @@
 (library
  (public_name owi)
  (modules
+  queries
   assigned
   binary
   binary_parser

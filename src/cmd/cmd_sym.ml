@@ -231,6 +231,7 @@ let run_file ~unsafe ~optimize pc filename =
   run_binary_modul ~unsafe ~optimize pc m
 
 let get_model ~symbols solver pc =
+  Queries.serialize pc;
   assert (`Sat = Solver.Z3Batch.check solver pc);
   match Solver.Z3Batch.model ~symbols solver with
   | None -> assert false
@@ -247,6 +248,8 @@ let cmd profiling debug unsafe optimize workers no_stop_at_failure no_values
   (* deterministic_result_order implies no_stop_at_failure *)
   let no_stop_at_failure = deterministic_result_order || no_stop_at_failure in
   let* _created_dir = Bos.OS.Dir.create ~path:true ~mode:0o755 workspace in
+  Queries.queries_path.d <- workspace;
+  let* _ = Bos.OS.Dir.create ~path:true ~mode:0o755 Queries.queries_path.d in
   let pc = Choice.return (Ok ()) in
   let solver = Solver.Z3Batch.create () in
   let result = List.fold_left (run_file ~unsafe ~optimize) pc files in
