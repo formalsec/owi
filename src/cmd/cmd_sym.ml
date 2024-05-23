@@ -231,8 +231,8 @@ let run_file ~unsafe ~optimize pc filename =
   run_binary_modul ~unsafe ~optimize pc m
 
 let get_model ~symbols solver pc =
-  Queries.serialize pc;
   assert (`Sat = Solver.Z3Batch.check solver pc);
+  Queries.serialize pc `Sat;
   match Solver.Z3Batch.model ~symbols solver with
   | None -> assert false
   | Some model -> model

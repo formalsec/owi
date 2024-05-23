@@ -476,8 +476,9 @@ module Multicore = struct
     let* (S (solver_module, s)) = solver in
     let module Solver = (val solver_module) in
     let* thread in
-    Queries.serialize thread.pc;
-    match Solver.check s thread.pc with
+    let ans = Solver.check s thread.pc in
+    Queries.serialize thread.pc ans;
+    match ans with
     | `Sat -> return ()
     | `Unsat | `Unknown -> stop
 
@@ -486,8 +487,9 @@ module Multicore = struct
     let* (S (solver_module, s)) = solver in
     let module Solver = (val solver_module) in
     let+ thread in
-    Queries.serialize thread.pc;
-    match Solver.check s thread.pc with
+    let ans = Solver.check s thread.pc in
+    Queries.serialize thread.pc ans;
+    match ans with
     | `Unsat | `Unknown -> None
     | `Sat -> begin
       let model = Solver.model ~symbols:[ symbol ] s in
